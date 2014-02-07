@@ -13,8 +13,8 @@ from __future__ import division, absolute_import, print_function
 
 __all__ = ['matrix_power', 'solve', 'tensorsolve', 'tensorinv', 'inv',
            'cholesky', 'eigvals', 'eigvalsh', 'pinv', 'slogdet', 'det',
-           'svd', 'eig', 'eigh', 'lstsq', 'norm', 'qr', 'cond', 'matrix_rank',
-           'LinAlgError']
+           'svd', 'eig', 'eigh', 'ldl', 'lstsq', 'norm', 'qr', 'cond',
+           'matrix_rank', 'LinAlgError']
 
 import warnings
 
@@ -601,6 +601,43 @@ def cholesky(a):
     t, result_t = _commonType(a)
     signature = 'D->D' if isComplexType(t) else 'd->d'
     return wrap(gufunc(a, signature=signature, extobj=extobj).astype(result_t))
+
+
+# LDL decomposition
+
+def ldl(a):
+    """
+    LDL decomposition.
+
+    Return the LDL decomposition, `L * D * L.H`, of the square matrix `a`,
+    where `L` is lower-triangular, `D` is diagonal, and .H is the conjugate
+    transpose operator (which is the ordinary transpose if `a` is real-valued).
+    This decomposition is similar to the Cholesky decomposition, but avoids
+    taking square roots, making it theoretically faster. `a` must be Hermitian
+    (symmetric if real-valued) and positive-definite.  Only `L` and `D` are
+    actually returned (not `L.H`).
+
+    TODO: further documentation
+    """
+
+    a, wrap = _makearray(a)
+    _assertRankAtLeast2(a)
+    _assertNdSquareness(a)
+    t, result_t = _commonType(a)
+
+    gufunc = _umath_linalg.ldl_lo
+    # signature = 'D->DD' if isComplexType(t) else 'd->dd'
+    # extobj = get_linalg_error_extobj(_raise_linalgerror_nonposdef)
+    # l, d = gufunc(a, signature=signature, extobj=extobj)
+
+    # return wrap(l.astype(result_t)), wrap(d.astype(result_t))
+
+    signature = 'D->D' if isComplexType(t) else 'd->d'
+    extobj = get_linalg_error_extobj(_raise_linalgerror_nonposdef)
+    b = gufunc(a, signature=signature, extobj=extobj)
+
+    return wrap(b.astype(result_t))
+
 
 # QR decompostion
 
